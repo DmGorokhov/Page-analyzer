@@ -8,14 +8,14 @@ PORT ?= 8000
 start:
 		poetry run gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
 
-publish:
-		poetry publish --dry-run
+db-create:
+	createdb page_analyzer || echo 'skip'
 
-package-install:
-		python3 -m pip install --user dist/*.whl
+db-reset:
+	dropdb page_analyzer || true
+	createdb page_analyzer
+	psql page_analyzer < database.sql
 
-package-reinstall:
-		python3 -m pip install --user --force-reinstall dist/*.whl
 
 lint:
 		poetry run flake8 page_analyzer
