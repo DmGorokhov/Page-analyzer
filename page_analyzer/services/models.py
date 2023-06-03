@@ -2,7 +2,7 @@ import psycopg2
 from datetime import datetime
 
 
-class DBUrlsModel():
+class DBUrlsModel:
 
     def __init__(self, connection):
         self.conn = connection
