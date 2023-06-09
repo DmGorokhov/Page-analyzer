@@ -18,28 +18,28 @@ class DBUrlsModel:
     def db_close(self):
         self.conn.close()
 
+    def make_sqlquery(self, sql, data=None, fetch=None):
+        with self.conn.cursor(cursor_factory=DictCursor) as curs:
+            curs.execute(sql, data)
+            match fetch:
+                case None:
+                    return
+                case 'one':
+                    return curs.fetchone()
+                case 'all':
+                    return curs.fetchall()
+
     def get_url(self, id):
         SQL = f"SELECT * FROM urls WHERE id={id}"
-
-        with self.conn:
-            with self.conn.cursor() as curs:
-                curs.execute(SQL)
-                row = curs.fetchone()
-                if row:
-                    return {'id': row[0], 'name': row[1],
-                            'created_at': datetime.date(row[2])
-                            }
-                return
+        row = self.make_sqlquery(SQL, fetch='one')
+        return row
 
     def find_url(self, url):
         SQL = 'SELECT id FROM urls WHERE name LIKE %s'
-        with self.conn:
-            with self.conn.cursor() as curs:
-                curs.execute(SQL, (url,))
-                id = curs.fetchone()
-                if id:
-                    return id[0]
-                return
+        url_id = self.make_sqlquery(SQL, (url,), fetch='one')
+        if url_id:
+            return url_id.get('id')
+        return
 
     def get_urls_list(self):
         SQL = ("SELECT "
@@ -49,14 +49,8 @@ class DBUrlsModel:
                "GROUP BY urls.id, url_checks.status_code "
                "ORDER BY urls.created_at DESC")
 
-        with self.conn:
-            with self.conn.cursor(cursor_factory=DictCursor) as curs:
-                curs.execute(SQL)
-                rows = curs.fetchall()
-                for row in rows:
-                    if row['last_check']:
-                        row['last_check'] = datetime.date(row['last_check'])
-                return rows
+        rows = self.make_sqlquery(SQL, fetch='all')
+        return rows
 
     def add_url(self, url):
         SQL = ("INSERT INTO urls (name, created_at) "
@@ -65,12 +59,11 @@ class DBUrlsModel:
         data = (url, datetime.now())
 
         with self.conn:
-            with self.conn.cursor() as curs:
-                try:
-                    curs.execute(SQL, data)
-                    return curs.fetchone()[0]
-                except psycopg2.IntegrityError:
-                    return
+            try:
+                added_id = self.make_sqlquery(SQL, data, fetch='one')
+                return added_id[0]
+            except psycopg2.IntegrityError:
+                return
 
     def add_check(self, check):
         SQL = ("INSERT INTO url_checks "
@@ -79,34 +72,13 @@ class DBUrlsModel:
                "(%(url_id)s, %(status_code)s, %(h1)s, %(title)s, "
                "%(description)s, %(created_at)s) "
                "RETURNING id")
-        data = check
 
         with self.conn:
-            with self.conn.cursor() as curs:
-                curs.execute(SQL, data)
-                return curs.fetchone()
+            self.make_sqlquery(SQL, check)
 
     def get_url_checks(self, id):
         SQL = ("SELECT * FROM url_checks "
                "WHERE url_id=%s ORDER BY created_at DESC")
 
-        with self.conn:
-            with self.conn.cursor(cursor_factory=DictCursor) as curs:
-                curs.execute(SQL, (id,))
-                rows = curs.fetchall()
-                for row in rows:
-                    row['created_at'] = datetime.date(row['created_at'])
-                return rows
-
-
-def make_urlcheck(url_id, url_name):
-
-    status_code = None
-    h1 = None
-    title = None
-    description = None
-    check = {'url_id': url_id, 'status_code': status_code, 'h1': h1,
-             'title': title, 'description': description,
-             'created_at': datetime.now()
-             }
-    return check
+        rows = self.make_sqlquery(SQL, (id,), fetch='all')
+        return rows

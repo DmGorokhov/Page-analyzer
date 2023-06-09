@@ -1,15 +1,16 @@
-import os
-from dotenv import load_dotenv
-from flask import Flask, render_template, redirect, request, url_for, flash
-from page_analyzer.services.models import DBUrlsModel, make_urlcheck
-from validators import url as validate_url
-from urllib.parse import urlparse
+from flask import (Flask, request, render_template,
+                   redirect, url_for, flash, abort)
+from page_analyzer.services.models import DBUrlsModel
+from page_analyzer.services.processing import (is_valid_url, get_parsed_url,
+                                               make_urlcheck)
+from page_analyzer.settings import Configs
 
-load_dotenv()
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
-DATABASE_URL = os.getenv('DATABASE_URL')
+configs = Configs()
+
+app.config["SECRET_KEY"] = configs.secret_key
+DATABASE_URL = configs.db_url
 
 
 @app.route("/")
@@ -27,25 +28,25 @@ def get_urls():
     return render_template('urls_index.html', urls=urls)
 
 
-@app.route('/urls/<id>')
+@app.route('/urls/<int:id>')
 def get_url(id):
     repo_urls = DBUrlsModel(DATABASE_URL)
     repo_urls.db_conn()
     url = repo_urls.get_url(id)
-    checks_list = repo_urls.get_url_checks(id)
-    repo_urls.db_close()
-    if not url:
-        return render_template("404.html"), 404
-    return render_template('show_url.html', url=url, checks_list=checks_list)
+    if url:
+        checks_list = repo_urls.get_url_checks(id)
+        repo_urls.db_close()
+        return render_template('show_url.html', url=url,
+                               checks_list=checks_list)
+    abort(404)
 
 
 @app.post("/urls")
 def urls_post():
     url = request.form.get('url')
 
-    if validate_url(url):
-        parsed_url = f"https://{urlparse(url).hostname}"
-
+    if is_valid_url(url):
+        parsed_url = get_parsed_url(url)
         repo_urls = DBUrlsModel(DATABASE_URL)
         repo_urls.db_conn()
         url_id = repo_urls.find_url(parsed_url)
@@ -68,15 +69,19 @@ def check_url(id):
     repo_urls.db_conn()
     url = repo_urls.get_url(id)
     url_check = make_urlcheck(url['id'], url['name'])
-    current_check = repo_urls.add_check(url_check)
-    repo_urls.db_close()
-
-    if current_check:
+    if url_check:
+        repo_urls.add_check(url_check)
+        repo_urls.db_close()
         message = ('Страница успешно проверена', 'success')
     else:
         message = ('Произошла ошибка при проверке', 'danger')
     flash(*message)
     return redirect(url_for('get_url', id=url['id']))
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
 
 
 if __name__ == '__main__':
