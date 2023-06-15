@@ -68,7 +68,7 @@ def check_url(id):
     db_connection = DBSession(DATABASE_URL)
     repo_urls = DBUrlsModel(db_connection)
     url = repo_urls.get_url(id)
-    url_check = make_urlcheck(url['id'], url['name'])
+    url_check = make_urlcheck(url.get('id'), url.get('name'))
     if url_check:
         repo_urls.add_check(url_check)
         db_connection.close()
@@ -80,8 +80,13 @@ def check_url(id):
 
 
 @app.errorhandler(404)
-def page_not_found(error):
+def page_not_found(e):
     return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
 
 
 if __name__ == '__main__':

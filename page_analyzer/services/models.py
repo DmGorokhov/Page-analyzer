@@ -26,22 +26,22 @@ class DBSession:
 
 class DBUrlsModel:
 
-    def __init__(self, db_conn):
+    def __init__(self, db_conn: DBSession):
         self.db_conn = db_conn
 
-    def get_url(self, id):
+    def get_url(self, id: int) -> dict[str, any]:
         SQL = f"SELECT * FROM urls WHERE id={id}"
         row = self.db_conn.make_sqlquery(SQL, fetch='one')
         return row
 
-    def find_url(self, url):
+    def find_url(self, url: str) -> int | None:
         SQL = 'SELECT id FROM urls WHERE name LIKE %s'
         url_id = self.db_conn.make_sqlquery(SQL, (url,), fetch='one')
         if url_id:
             return url_id.get('id')
         return
 
-    def get_urls_list(self):
+    def get_urls_list(self) -> list[dict]:
         SQL = ("SELECT "
                "urls.id, urls.name, MAX(url_checks.created_at) as last_check, "
                "url_checks.status_code "
@@ -52,7 +52,7 @@ class DBUrlsModel:
         rows = self.db_conn.make_sqlquery(SQL, fetch='all')
         return rows
 
-    def add_url(self, url):
+    def add_url(self, url: str) -> int:
         SQL = ("INSERT INTO urls (name, created_at) "
                "VALUES (%s, %s) RETURNING id")
 
@@ -60,7 +60,7 @@ class DBUrlsModel:
         added_id = self.db_conn.make_sqlquery(SQL, data, fetch='one')[0]
         return added_id
 
-    def add_check(self, check):
+    def add_check(self, check: dict):
         SQL = ("INSERT INTO url_checks "
                "(url_id, status_code, h1, title, description, created_at) "
                "VALUES "
@@ -70,7 +70,7 @@ class DBUrlsModel:
 
         self.db_conn.make_sqlquery(SQL, check)
 
-    def get_url_checks(self, id):
+    def get_url_checks(self, id: int) -> list[dict]:
         SQL = ("SELECT * FROM url_checks "
                "WHERE url_id=%s ORDER BY created_at DESC")
 
