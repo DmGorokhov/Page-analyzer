@@ -5,7 +5,7 @@
 
 
 ### About:
-[Page analyzer](page-analyze.up.railway.app)
+[Page analyzer](https://page-analyze.up.railway.app)
  is the simple SEO analyzer for any website.
 Try it and analyze your SEO!
 
