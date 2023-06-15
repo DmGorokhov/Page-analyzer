@@ -60,7 +60,7 @@ def urls_post():
         return redirect(url_for('get_url', id=url_id), code=302)
 
     flash('Некорректный URL', 'danger')
-    return render_template('index.html', uncorrect_url=url)
+    return render_template('index.html', uncorrect_url=url), 422
 
 
 @app.post('/urls/<id>/checks')
