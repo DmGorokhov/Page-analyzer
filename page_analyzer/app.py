@@ -1,6 +1,6 @@
 from flask import (Flask, request, render_template,
                    redirect, url_for, flash, abort)
-from page_analyzer.services.models import DBUrlsModel, DBSession
+from page_analyzer.services.database_model import DBUrlsModel, DBSession
 from page_analyzer.services.processing import (is_valid_url, get_parsed_url,
                                                make_urlcheck)
 from page_analyzer.settings import Configs
@@ -87,7 +87,3 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('500.html'), 500
-
-
-if __name__ == '__main__':
-    app.run
