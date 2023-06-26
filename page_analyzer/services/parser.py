@@ -1,5 +1,3 @@
-from validators import url as is_valid_url
-from urllib.parse import urlparse
 import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -12,20 +10,10 @@ MAXLENGTH_URL = 255
 class UrlCheck:
     url_id: int
     status_code: int
-    h1: str
-    title: str
+    h1: str | None
+    title: str | None
     description: str | None
     created_at: datetime
-
-
-def validate_url(url: str) -> bool:
-    return is_valid_url(url) and len(url) <= MAXLENGTH_URL
-
-
-def get_parsed_url(url: str) -> str:
-    parsed_url = urlparse(url)
-    format_url = f'{parsed_url.scheme}://{parsed_url.netloc}'
-    return format_url
 
 
 def make_url_request(url_name: str):
@@ -47,8 +35,8 @@ def make_urlcheck(url_id: int, url_name: str) -> dict[str, any] | None:
         check = UrlCheck(
             url_id=url_id,
             status_code=url_response.status_code,
-            h1=(soup.h1.string),
-            title=(soup.head.title.string),
+            h1=(soup.h1.string if soup.h1 else None),
+            title=(soup.head.title.string if soup.head else None),
             description=(desc['content'] if desc else None),
             created_at=(datetime.now())
         )

@@ -1,8 +1,8 @@
 from flask import (Flask, request, render_template,
                    redirect, url_for, flash, abort)
-from page_analyzer.services.database_model import DBUrlsModel, DBSession
-from page_analyzer.services.processing import (is_valid_url, get_parsed_url,
-                                               make_urlcheck)
+from page_analyzer.services.database import DBUrlsModel, DBSession
+from page_analyzer.services.validator import is_valid_url, get_parsed_url
+from page_analyzer.services.parser import make_urlcheck
 from page_analyzer.settings import Configs
 
 
